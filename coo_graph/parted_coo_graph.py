@@ -89,7 +89,7 @@ class COO_Graph(BasicGraph):
             cache_path = GraphCache.parted_graph_path(self.name, self.preprocess_for, i, num_parts)
             attr_dict.update({'adj': adj_list[i], 'features': features_list[i]})
             GraphCache.save_dict(attr_dict, cache_path)
-            print(Parted_COO_Graph(self.name, i, num_parts, self.preprocess_for))
+            print(Parted_COO_Graph(self.name, i, num_parts, preprocess_for=self.preprocess_for))
         print(self.name, num_parts, 'partition done', datetime.datetime.now()-begin)
 
 
