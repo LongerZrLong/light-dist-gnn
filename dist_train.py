@@ -58,11 +58,6 @@ def train(g, env, total_epoch):
 
 
 def main(env, args):
-    env.csr_enabled = False
-    env.csr_enabled = True
-
-    env.half_enabled = True
-    env.half_enabled = False
     env.logger.log('proc begin:', env)
     with env.timer.timing('total'):
         g = Parted_COO_Graph(args.dataset, env.rank, env.world_size, env.device, env.half_enabled, env.csr_enabled)

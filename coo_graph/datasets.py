@@ -4,6 +4,8 @@
 import os
 import torch
 
+import ogb.nodeproppred
+import torch_geometric
 
 data_root = os.path.join(os.path.dirname(__file__), '..', 'data')
 dgl_root = os.path.join(data_root, 'dgl_datasets')
@@ -51,8 +53,6 @@ def prepare_dgl_dataset(dgl_name, tag):
 
 
 def prepare_pyg_dataset(pyg_name, tag):
-    import torch_geometric
-    import ogb.nodeproppred
     dataset_sources = {'reddit': torch_geometric.datasets.Reddit,
                        'flickr': torch_geometric.datasets.Flickr,
                        'yelp': torch_geometric.datasets.Yelp,
@@ -67,8 +67,6 @@ def prepare_pyg_dataset(pyg_name, tag):
 
 
 def prepare_ogb_dataset(pyg_name, tag):
-    import torch_geometric
-    import ogb.nodeproppred
     dataset_source =  ogb.nodeproppred.PygNodePropPredDataset
     #  dataset_sources = { 'ogbn-products', 'ogbn-arxiv', 'ogbn-papers100M', }
     dataset = dataset_source(root=os.path.join(pyg_root, pyg_name), name=pyg_name)

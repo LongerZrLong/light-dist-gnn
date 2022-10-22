@@ -19,8 +19,8 @@ def process_wrapper(rank, args, func):
     # os.environ['NCCL_MAX_NCHANNELS'] = '1'
 
     env = dist_utils.DistEnv(rank, args.nprocs, args.backend)
-    env.half_enabled = True
-    env.csr_enabled = True
+    env.half_enabled = False
+    env.csr_enabled = False
     func(env, args)
 
 
