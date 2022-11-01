@@ -2,11 +2,4 @@
 # All rights reserved.
 
 from .env import DistEnv
-
-
-def main():
-    pass
-
-
-if __name__ == '__main__':
-    main()
+from .logger import create_logger

@@ -3,9 +3,6 @@ import torch
 import torch.distributed as dist
 import tempfile
 
-from .timer import DistTimer
-from .logger import DistLogger
-
 
 class DistEnv:
     def __init__(self, rank, world_size, backend='nccl'):
@@ -15,8 +12,6 @@ class DistEnv:
         self.backend = backend
         self.init_device()
         self.init_dist_groups()
-        self.logger = DistLogger(self)
-        self.timer = DistTimer(self)
         self.store = dist.FileStore(os.path.join(tempfile.gettempdir(), 'torch-dist'), self.world_size)
         DistEnv.env = self  # no global...
 

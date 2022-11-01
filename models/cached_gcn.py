@@ -1,10 +1,10 @@
-import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from dist_utils import DistEnv
-import torch.distributed as dist
+from dist_utils.timer import *
+
 
 try:
     from spmm_cpp import spmm_cusparse_coo, spmm_cusparse_csr
@@ -43,25 +43,23 @@ def cached_broadcast(local_adj_parts, local_feature, tag):
     env = DistEnv.env
     z_loc = torch.zeros_like(local_feature)
     feature_bcast = torch.zeros_like(local_feature)
-    # print('bcast feature', feature_bcast)
     g_epoch_counter[tag] += 1
     
     for src in range(env.world_size):
-        if src==env.rank:
+        if src == env.rank:
             feature_bcast = local_feature.clone()
-        # env.barrier_all()
-        with env.timer.timing_cuda('broadcast'):
+
+        with comm_timer.timer(f"broadcast: {tag}"):
             if not use_cache(tag, src):
-                with env.timer.timing_cuda(f'broadcast {tag} {src}'):
+                with comm_timer.timer(f'broadcast: {tag} {src}'):
                     dist.broadcast(feature_bcast, src=src)
                     g_bcast_counter[tag][src] += 1
                     if g_cache_enabled[tag]:
                         g_cache[tag][src] = feature_bcast.clone()
-                # env.logger.log('not cached', tag, src, 'counter', g_bcast_counter[tag][src])
             else:
-                # env.logger.log('cached', tag, src)
                 feature_bcast = g_cache[tag][src]
-        with env.timer.timing_cuda('spmm'):
+
+        with comp_timer.timer(f"spmm"):
             spmm(local_adj_parts[src], feature_bcast, z_loc)
     return z_loc
 
@@ -72,20 +70,30 @@ class DistGCNLayer(torch.autograd.Function):
         ctx.save_for_backward(features, weight)
         ctx.adj_parts = adj_parts
         ctx.tag = tag
-        z_local = cached_broadcast(adj_parts, features, 'Forward'+tag)
-        with DistEnv.env.timer.timing_cuda('mm'):
+
+        name = 'Forward' + tag
+        z_local = cached_broadcast(adj_parts, features, name)
+
+        with comp_timer.timer(f"forward_mm: {name}"):
             z_local = torch.mm(z_local, weight)
+
         return z_local
 
     @staticmethod
     def backward(ctx, grad_output):
         features,  weight = ctx.saved_tensors
-        ag = cached_broadcast(ctx.adj_parts, grad_output, 'Backward'+ctx.tag)
-        with DistEnv.env.timer.timing_cuda('mm'):
+
+        name = 'Backward' + ctx.tag
+
+        ag = cached_broadcast(ctx.adj_parts, grad_output, name)
+
+        with comp_timer.timer(f"backward_mm: {name}"):
             grad_features = torch.mm(ag.to(dtype=torch.float), weight.t())
             grad_weight = torch.mm(features.t(), ag)
-        with DistEnv.env.timer.timing_cuda('all_reduce'):
+
+        with reduce_timer.timer(f"all_reduce: {name}"):
             DistEnv.env.all_reduce_sum(grad_weight)
+
         return grad_features, grad_weight, None, None
 
 
@@ -98,13 +106,8 @@ class CachedGCN(nn.Module):
         self.weight1 = nn.Parameter(torch.rand(in_dim, hidden_dim).to(env.device))
         self.weight2 = nn.Parameter(torch.rand(hidden_dim, hidden_dim).to(env.device))
         self.weight3 = nn.Parameter(torch.rand(hidden_dim, out_dim).to(env.device))
-        # for weight in [self.weight1, self.weight2, self.weight3]:
-            # nn.init.xavier_uniform_(weight)
 
     def forward(self, features):
         hidden_features = F.relu(DistGCNLayer.apply(features, self.weight1, self.g.adj_parts, 'L1'))
-        # hidden_features = F.relu(DistGCNLayer.apply(hidden_features, self.weight2, self.g.adj_parts, 'L2'))
         outputs = DistGCNLayer.apply(hidden_features, self.weight3, self.g.adj_parts,  'L2')
         return outputs
-        # return F.log_softmax(outputs, 1)
-

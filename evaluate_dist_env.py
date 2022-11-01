@@ -2,30 +2,22 @@
 # All rights reserved.
 
 import os
-import datetime as dt
-import math
 import torch
-import torch.distributed as dist
 from dist_utils import DistEnv
-from torch.multiprocessing import Process
 
 
 def batch_bcast(env, sz_tag, size, repeat):
     dtype = torch.int8
     # dtype = torch.float
-    env.logger.log(f'Size: {sz_tag: <5} Repeat: {repeat}',  rank=0)
     data = torch.ones(size, dtype=dtype, device=env.device)
     recv = torch.zeros(size, dtype=dtype, device=env.device)
     tag = f'{env.backend}_{env.world_size}_broadcast'
     for i in range(repeat):
         torch.cuda.synchronize()
-        env.timer.start(tag)
         for src in range(env.world_size):
             buf = data if env.rank == src else recv
             env.broadcast(tensor=buf, src=src)
         torch.cuda.synchronize()
-        env.logger.log(f'{sz_tag} {i+1}/{repeat}', oneline=True, rank=0)
-        env.timer.stop(tag, sz_tag)
 
 
 def eval_broadcast(env):
@@ -46,10 +38,7 @@ def evaluate(rank, nprocs, backend):
     # os.environ['NCCL_DEBUG']='INFO'
     os.environ['NCCL_SOCKET_IFNAME'] = 'lo'
     env = DistEnv(rank, nprocs, backend)
-    env.timer.start('total')
     eval_broadcast(env)
-    env.timer.stop('total')
-    env.logger.log(env.timer.summary_all(), rank=0)
 
 
 if __name__ == "__main__":

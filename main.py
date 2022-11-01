@@ -4,7 +4,6 @@ import torch
 
 import dist_utils
 import dist_train
-import torch.distributed as dist
 
 
 def process_wrapper(rank, args, func):
@@ -21,6 +20,9 @@ def process_wrapper(rank, args, func):
     env = dist_utils.DistEnv(rank, args.nprocs, args.backend)
     env.half_enabled = False
     env.csr_enabled = False
+
+    dist_utils.create_logger(os.path.join(args.log_dir, f"{args.dataset}_partition_{args.nprocs}.log"))
+
     func(env, args)
 
 
@@ -31,6 +33,11 @@ if __name__ == "__main__":
     parser.add_argument("--epoch", type=int, default=20)
     parser.add_argument("--backend", type=str, default='nccl' if num_GPUs>1 else 'gloo')
     parser.add_argument("--dataset", type=str, default='reddit')
+    parser.add_argument("--log_dir", type=str, default='logs')
     args = parser.parse_args()
+
+    # create the directory for log
+    os.makedirs(args.log_dir, exist_ok=True)
+
     process_args = (args, dist_train.main)
     torch.multiprocessing.spawn(process_wrapper, process_args, args.nprocs)
