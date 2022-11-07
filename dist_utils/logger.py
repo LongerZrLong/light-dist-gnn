@@ -1,7 +1,7 @@
 import logging
 
 
-def create_logger(log_name):
+def create_logger(combined_log_path, cur_log_path):
     # filter
     class fileFilter(logging.Filter):
         def filter(self, record):
@@ -16,7 +16,9 @@ def create_logger(log_name):
         format="%(asctime)s| %(message)s",
         datefmt="%m-%d:%H:%M:%S",
         level=logging.INFO,
-        handlers=[logging.FileHandler(log_name, mode="a"), logging.StreamHandler()],
+        handlers=[logging.FileHandler(combined_log_path, mode='a'),
+                  logging.FileHandler(cur_log_path, mode="a"),
+                  logging.StreamHandler()],
     )
 
     for handler in logging.root.handlers:

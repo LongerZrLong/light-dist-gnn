@@ -25,8 +25,6 @@ def f1(y_true, y_pred, multilabel=True):
 
 
 def train(g, env, total_epoch):
-    logging.info("Rank={} Start training".format(env.rank))
-
     model = CachedGCN(g, env, hidden_dim=16)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
     if g.labels.dim()==1:

@@ -21,7 +21,9 @@ def process_wrapper(rank, args, func):
     env.half_enabled = False
     env.csr_enabled = False
 
-    dist_utils.create_logger(os.path.join(args.log_dir, f"{args.dataset}_partition_{args.nprocs}.log"))
+    combined_log_path = os.path.join(args.log_dir, f"{args.dataset}_partition_{args.nprocs}.log")
+    cur_log_path = os.path.join(args.log_dir, f"{args.dataset}_partition_{args.nprocs}_{rank}.log")
+    dist_utils.create_logger(combined_log_path, cur_log_path)
 
     func(env, args)
 
