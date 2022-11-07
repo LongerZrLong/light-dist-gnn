@@ -34,7 +34,7 @@ if __name__ == "__main__":
     parser.add_argument("--nprocs", type=int, default=num_GPUs if num_GPUs>1 else 8)
     parser.add_argument("--epoch", type=int, default=20)
     parser.add_argument("--backend", type=str, default='nccl' if num_GPUs>1 else 'gloo')
-    parser.add_argument("--dataset", type=str, default='reddit')
+    parser.add_argument("--dataset", type=str, default='ogbn-products')
     parser.add_argument("--log_dir", type=str, default='logs')
     args = parser.parse_args()
 
