@@ -24,8 +24,6 @@ from collections import defaultdict
 g_cache = defaultdict(dict)
 g_cache_enabled = {'ForwardL1': True, 'ForwardL2': True,
                    'BackwardL1': False, 'BackwardL2': False }
-g_cache_enabled = {'ForwardL1': False, 'ForwardL2': False,
-                   'BackwardL1': False, 'BackwardL2': False }
 
 g_bcast_counter = defaultdict(lambda: defaultdict(int))
 g_epoch_counter = defaultdict(int)
